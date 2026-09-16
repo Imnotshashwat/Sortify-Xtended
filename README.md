@@ -1,4 +1,4 @@
-﻿<p align="center">
+<p align="center">
   <img src="banner.png" alt="Sortify Xtended Banner" width="100%" />
 </p>
 
@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform" />
   <img src="https://img.shields.io/badge/Root-Magisk%20%7C%20KernelSU%20%7C%20APatch-orange" alt="Root Managers" />
   <img src="https://img.shields.io/badge/Version-v1.0-blue" alt="Version" />
-  <img src="https://img.shields.io/badge/License-GPL--3.0-brightgreen" alt="License" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
 </p>
 
 Sortify Xtended is a root module for Android (Magisk, KernelSU, and APatch) that keeps your download folders organized. It automatically sorts incoming files into category directories, provides an offline WebUI inside your root manager, handles scheduling and collision renaming, and migrates setups from the original Sortify module.
