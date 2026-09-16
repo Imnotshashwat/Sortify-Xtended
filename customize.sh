@@ -1,4 +1,4 @@
-#!/system/bin/sh
+﻿#!/system/bin/sh
 # ─────────────────────────────────────────────
 # Sortify Xtended v1.0 - customize.sh
 # Runs during flash via Magisk/KernelSU/APatch
@@ -22,8 +22,7 @@ if [ "$API" -lt 26 ]; then
     abort "Unsupported Android version: API $API"
 fi
 
-ui_print "- Android API $API ✓"
-ui_print "- Arch: $ARCH"
+ui_print "- Android API $API ($ARCH) ✓"
 
 # ─── create webroot dir ────────────────────
 ui_print "- Setting up webroot..."
@@ -75,7 +74,7 @@ add_if_missing() {
 
 if [ -f "$CONF" ]; then
     # ── upgrade: existing Sortify Xtended conf ──
-    ui_print "  ✔ Existing config found — merging new keys"
+    ui_print "  ✔ Existing config merged"
     # always reset stopped/paused on upgrade
     sed -i 's/^STOPPED=.*/STOPPED=false/' "$CONF"
     sed -i 's/^PAUSED_UNTIL=.*/PAUSED_UNTIL=0/' "$CONF"
@@ -106,7 +105,7 @@ if [ -f "$CONF" ]; then
 
 elif [ -f "$OLD_CONF" ]; then
     # ── migration: old Sortify (v7.x) conf found ──
-    ui_print "  ✔ Old Sortify config found — migrating settings"
+    ui_print "  ✔ Old Sortify settings imported"
     write_default_conf
     # migrate what we can from old conf
     old_interval=$(grep "^INTERVAL=" "$OLD_CONF" | cut -d= -f2)
@@ -117,19 +116,16 @@ elif [ -f "$OLD_CONF" ]; then
     [ -n "$old_exclude" ]  && sed -i "s/^EXCLUDE_FILES=.*/EXCLUDE_FILES=$old_exclude/" "$CONF"
     # migrate old CUSTOM_FOLDER_* rules
     grep "^CUSTOM_FOLDER_" "$OLD_CONF" 2>/dev/null >> "$CONF"
-    ui_print "  ✔ Settings migration complete"
 
 else
     # ── fresh install ──
-    ui_print "  ✔ Fresh install — writing defaults"
+    ui_print "  ✔ Fresh install config applied"
     write_default_conf
 fi
 
-# ─── copy conf to webroot immediately ──────
-# so WebUI can read it on very first open
+# Copy conf to webroot immediately so WebUI can read on first launch
 cp "$CONF" "$WEBROOT/sortify.conf" 2>/dev/null
 chmod 666 "$WEBROOT/sortify.conf" 2>/dev/null
-ui_print "  ✔ Config ready"
 
 # ─── safe move helper (avoids overwriting duplicates) ───
 safe_mv() {
@@ -160,74 +156,69 @@ safe_mv() {
     fi
 }
 
-# ─── legacy folder migration ───────────
-# Migrate files from legacy Sortify folders into /sdcard/Download
-DEST="/sdcard/Download"
+# ─── unified legacy migration & cleanup ───
+if [ -d "/sdcard/Sortify" ] || [ -d "/sdcard/Download/Sortify" ] || [ -d "/data/adb/modules/sortify" ]; then
+    ui_print "─────────────────────────────────"
+    ui_print "  ⚙ Legacy Migration:"
+    DEST="/sdcard/Download"
 
-for old_dir in "/sdcard/Sortify" "/sdcard/Download/Sortify"; do
-    if [ -d "$old_dir" ]; then
-        ui_print "─────────────────────────────────"
-        ui_print "  ⚙ Legacy Sortify folder found:"
-        ui_print "    $old_dir"
-        ui_print "  Migrating files to Downloads..."
-
-        # 1. Category folders
-        for folder in Documents Images Videos Archives Apps Others Duplicates Code; do
-            if [ -d "$old_dir/$folder" ]; then
-                find "$old_dir/$folder" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-                    [ -n "$f" ] && safe_mv "$f" "$DEST/$folder"
-                done
-                rmdir "$old_dir/$folder" 2>/dev/null
-            fi
-        done
-
-        # 2. Audio — detect music exts and route to Audio/Music, rest in Audio/
-        if [ -d "$old_dir/Audio" ]; then
-            MUSIC_EXTS="mp3 flac wav m4a ogg aac opus alac"
-            find "$old_dir/Audio" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-                [ -z "$f" ] && continue
-                ext=$(basename "$f" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
-                is_music=false
-                for me in $MUSIC_EXTS; do
-                    if [ "$ext" = "$me" ]; then
-                        is_music=true
-                        break
-                    fi
-                done
-                if [ "$is_music" = "true" ]; then
-                    safe_mv "$f" "$DEST/Audio/Music"
-                else
-                    safe_mv "$f" "$DEST/Audio"
+    for old_dir in "/sdcard/Sortify" "/sdcard/Download/Sortify"; do
+        if [ -d "$old_dir" ]; then
+            # 1. Category folders
+            for folder in Documents Images Videos Archives Apps Others Duplicates Code; do
+                if [ -d "$old_dir/$folder" ]; then
+                    find "$old_dir/$folder" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                        [ -n "$f" ] && safe_mv "$f" "$DEST/$folder"
+                    done
+                    rmdir "$old_dir/$folder" 2>/dev/null
                 fi
             done
-            rmdir "$old_dir/Audio" 2>/dev/null
+
+            # 2. Audio — detect music exts and route to Audio/Music, rest in Audio/
+            if [ -d "$old_dir/Audio" ]; then
+                MUSIC_EXTS="mp3 flac wav m4a ogg aac opus alac"
+                find "$old_dir/Audio" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                    [ -z "$f" ] && continue
+                    ext=$(basename "$f" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
+                    is_music=false
+                    for me in $MUSIC_EXTS; do
+                        if [ "$ext" = "$me" ]; then
+                            is_music=true
+                            break
+                        fi
+                    done
+                    if [ "$is_music" = "true" ]; then
+                        safe_mv "$f" "$DEST/Audio/Music"
+                    else
+                        safe_mv "$f" "$DEST/Audio"
+                    fi
+                done
+                rmdir "$old_dir/Audio" 2>/dev/null
+            fi
+
+            # 3. Any leftover files directly in root of old_dir
+            find "$old_dir" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                [ -n "$f" ] && safe_mv "$f" "$DEST"
+            done
+
+            rmdir "$old_dir" 2>/dev/null
+            ui_print "  • Migrated $old_dir"
         fi
+    done
 
-        # 3. Any leftover files directly in the root of old_dir
-        find "$old_dir" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-            [ -n "$f" ] && safe_mv "$f" "$DEST"
-        done
-
-        # Remove old directory if empty
-        rmdir "$old_dir" 2>/dev/null
-
-        ui_print "  ✔ Migration from $old_dir complete"
-        ui_print "─────────────────────────────────"
+    # Cleanly remove old module if installed
+    if [ -d "/data/adb/modules/sortify" ]; then
+        touch "/data/adb/modules/sortify/remove" 2>/dev/null
+        rm -rf "/data/adb/modules/sortify" 2>/dev/null
+        ui_print "  • Replaced legacy Sortify module"
     fi
-done
 
-# ─── replace older Sortify module ───────────
-if [ -d "/data/adb/modules/sortify" ]; then
-    ui_print "─────────────────────────────────"
-    ui_print "  ⚙ Removing legacy Sortify module..."
-    touch "/data/adb/modules/sortify/remove" 2>/dev/null
-    rm -rf "/data/adb/modules/sortify" 2>/dev/null
-    ui_print "  ✔ Upgraded from original Sortify"
+    ui_print "  ✔ Upgraded cleanly"
     ui_print "─────────────────────────────────"
 fi
 
 # ─── set permissions ───────────────────────
-ui_print "- Setting permissions..."
+ui_print "- Applying permissions..."
 set_perm_recursive "$MODPATH"         0 0 0755 0644
 set_perm "$MODPATH/service.sh"        0 0 0755
 set_perm "$MODPATH/action.sh"         0 0 0755
@@ -235,7 +226,6 @@ set_perm "$MODPATH/uninstall.sh"      0 0 0755
 set_perm "$MODPATH/customize.sh"      0 0 0755
 set_perm "$CONF"                      0 0 0644
 set_perm "$WEBROOT/sortify.conf"      0 0 0644
-ui_print "  ✔ Permissions applied"
 
 ui_print "─────────────────────────────────"
 ui_print "  Sortify Xtended installed!"
