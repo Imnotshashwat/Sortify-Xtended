@@ -1,0 +1,16 @@
+# Runtime logs and history
+*.log
+*.history
+sortify.stats
+webroot/sortify.stats
+webroot/sortify.log
+webroot/sortify.history
+
+# Temp files and locks
+/tmp/
+*.tmp
+*.lock
+
+# OS metadata
+.DS_Store
+Thumbs.db
