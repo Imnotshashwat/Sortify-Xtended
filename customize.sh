@@ -1,4 +1,4 @@
-﻿#!/system/bin/sh
+#!/system/bin/sh
 # ─────────────────────────────────────────────
 # Sortify Xtended v1.0 - customize.sh
 # Runs during flash via Magisk/KernelSU/APatch
@@ -215,6 +215,16 @@ for old_dir in "/sdcard/Sortify" "/sdcard/Download/Sortify"; do
         ui_print "─────────────────────────────────"
     fi
 done
+
+# ─── replace older Sortify module ───────────
+if [ -d "/data/adb/modules/sortify" ]; then
+    ui_print "─────────────────────────────────"
+    ui_print "  ⚙ Removing legacy Sortify module..."
+    touch "/data/adb/modules/sortify/remove" 2>/dev/null
+    rm -rf "/data/adb/modules/sortify" 2>/dev/null
+    ui_print "  ✔ Upgraded from original Sortify"
+    ui_print "─────────────────────────────────"
+fi
 
 # ─── set permissions ───────────────────────
 ui_print "- Setting permissions..."
