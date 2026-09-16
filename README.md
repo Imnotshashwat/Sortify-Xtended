@@ -1,10 +1,17 @@
-# Sortify Xtended
-
-<p align="center">
+﻿<p align="center">
   <img src="banner.png" alt="Sortify Xtended Banner" width="100%" />
 </p>
 
-A background file organizer module for rooted Android devices running Magisk, KernelSU, or APatch. Sortify Xtended automatically moves files from your download folders into organized categories, with scheduling controls, custom folder rules, duplicate collision protection, migration from original Sortify, and an integrated WebUI.
+# Sortify Xtended
+
+<p align="left">
+  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?logo=android&logoColor=white" alt="Platform" />
+  <img src="https://img.shields.io/badge/Root-Magisk%20%7C%20KernelSU%20%7C%20APatch-orange" alt="Root Managers" />
+  <img src="https://img.shields.io/badge/Version-v1.0-blue" alt="Version" />
+  <img src="https://img.shields.io/badge/License-GPL--3.0-brightgreen" alt="License" />
+</p>
+
+A background file organizer module for rooted Android devices running Magisk, KernelSU, or APatch. Sortify Xtended automatically moves files from your download folders into organized categories, featuring scheduling windows, subcategory routing, duplicate collision protection, migration from original Sortify, and an integrated WebUI dashboard.
 
 Based on the original [Sortify](https://github.com/xCaptaiN09/Sortify) module by [xCaptaiN09](https://github.com/xCaptaiN09).
 
@@ -13,11 +20,13 @@ Based on the original [Sortify](https://github.com/xCaptaiN09/Sortify) module by
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/webui-dashboard.png" alt="WebUI Dashboard" width="30%" />
+  <img src="screenshots/webui-dashboard.png" alt="WebUI Dashboard" width="23%" />
   &nbsp;
-  <img src="screenshots/webui-overview.jpg" alt="WebUI Overview" width="30%" />
+  <img src="screenshots/webui-safety-toast.png" alt="WebUI Safety Net" width="23%" />
   &nbsp;
-  <img src="screenshots/webui-settings.jpg" alt="WebUI Settings" width="30%" />
+  <img src="screenshots/webui-overview.jpg" alt="WebUI Overview" width="23%" />
+  &nbsp;
+  <img src="screenshots/webui-settings.jpg" alt="WebUI Settings" width="23%" />
 </p>
 
 ---
@@ -25,10 +34,10 @@ Based on the original [Sortify](https://github.com/xCaptaiN09/Sortify) module by
 ## Features
 
 ### Automated Sorting
-- Runs automatically in the background at your chosen interval (default: every 6 hours).
+- Runs automatically in the background at your chosen interval (default: every 5 minutes).
 - Supports multiple watch folders (default: `/sdcard/Download`).
 - Safe file handling: skips incomplete downloads (`.crdownload`, `.part`, `.partial`), temporary files, system files, and files modified within the last 5 seconds to prevent moving active downloads.
-- Skips critical firmware flash images (`boot.img`, `init_boot.img`, `vendor_boot.img`, `recovery.img`) to avoid breaking root patching tools and fastboot workflows.
+- Skips critical firmware flash images (`boot.img`, `init_boot.img`, `vendor_boot.img`, `recovery.img`) to avoid interrupting root patching tools and fastboot workflows.
 - Safe duplicate handling: identifies duplicate files and moves them to `Duplicates/` with automatic collision renaming (e.g. `file-1.zip`, `file-2.zip`) so previous duplicates are never overwritten.
 
 ### Subcategory Routing
@@ -37,8 +46,8 @@ Based on the original [Sortify](https://github.com/xCaptaiN09/Sortify) module by
 - **Root Modules:** ZIP archives containing root module files (`module.prop`, `action.sh`) are identified by inspecting archive headers and routed directly to `Archives/Modules` without extracting the file.
 
 ### Migration from Original Sortify
-- Detects files sorted by the original Sortify module (in `/sdcard/Sortify` or `/sdcard/Download/Sortify`).
-- Automatically moves them back to the download root with conflict renaming and cleans up the legacy folders so they can be re-sorted cleanly under Sortify Xtended.
+- **Installer Migration:** Flashing in Magisk or KernelSU automatically detects legacy Sortify installations, pulls old configuration settings, and migrates files from `/sdcard/Sortify` or `/sdcard/Download/Sortify` directly to your download directory.
+- **Runtime Migration:** The background service and manual trigger also scan for legacy Sortify folders on boot and safely migrate any newly discovered legacy files.
 
 ### Multi-Layer Safety Net
 - Watch folder validation blocks critical root paths and scoped storage folders (`/`, `/system`, `/data`, `/data/adb`, `/sdcard/Android`, `/sdcard/DCIM`).
@@ -92,8 +101,9 @@ To trigger a sort manually without opening the WebUI:
 
 1. Download the flashable `sortify_xtended.zip` from [Releases](../../releases).
 2. Flash the zip in **Magisk**, **KernelSU**, or **APatch**.
+   - The installer displays terminal feedback while setting up webroot, migrating older configs, and transferring legacy files.
 3. Reboot your device.
-4. Configure settings through the WebUI in your root manager.
+4. Open your root manager and tap **Sortify Xtended → WebUI** to configure.
 
 ---
 
