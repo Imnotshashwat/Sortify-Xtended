@@ -156,63 +156,111 @@ safe_mv() {
     fi
 }
 
-# ─── unified legacy migration & cleanup ───
-if [ -d "/sdcard/Sortify" ] || [ -d "/sdcard/Download/Sortify" ] || [ -d "/data/adb/modules/sortify" ]; then
-    ui_print "─────────────────────────────────"
-    ui_print "  ⚙ Legacy Migration:"
-    DEST="/sdcard/Download"
+# ─── legacy migration & cleanup ───
+DEST="/sdcard/Download"
+has_migrated=false
 
-    for old_dir in "/sdcard/Sortify" "/sdcard/Download/Sortify"; do
-        if [ -d "$old_dir" ]; then
-            # 1. Category folders
-            for folder in Documents Images Videos Archives Apps Others Duplicates Code; do
-                if [ -d "$old_dir/$folder" ]; then
-                    find "$old_dir/$folder" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-                        [ -n "$f" ] && safe_mv "$f" "$DEST/$folder"
-                    done
-                    rmdir "$old_dir/$folder" 2>/dev/null
-                fi
-            done
+start_legacy_box() {
+    if [ "$has_migrated" != "true" ]; then
+        has_migrated=true
+        ui_print "─────────────────────────────────"
+        ui_print "  ⚙ Legacy Migration:"
+    fi
+}
 
-            # 2. Audio — detect music exts and route to Audio/Music, rest in Audio/
-            if [ -d "$old_dir/Audio" ]; then
-                MUSIC_EXTS="mp3 flac wav m4a ogg aac opus alac"
-                find "$old_dir/Audio" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-                    [ -z "$f" ] && continue
-                    ext=$(basename "$f" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
-                    is_music=false
-                    for me in $MUSIC_EXTS; do
-                        if [ "$ext" = "$me" ]; then
-                            is_music=true
-                            break
-                        fi
-                    done
-                    if [ "$is_music" = "true" ]; then
-                        safe_mv "$f" "$DEST/Audio/Music"
-                    else
-                        safe_mv "$f" "$DEST/Audio"
+# 1. Check true legacy Sortify directory (/sdcard/Sortify)
+if [ -d "/sdcard/Sortify" ]; then
+    if [ -n "$(find "/sdcard/Sortify" -type f 2>/dev/null)" ]; then
+        start_legacy_box
+        for folder in Documents Images Videos Archives Apps Others Duplicates Code; do
+            if [ -d "/sdcard/Sortify/$folder" ]; then
+                find "/sdcard/Sortify/$folder" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                    [ -n "$f" ] && safe_mv "$f" "$DEST/$folder"
+                done
+                rmdir "/sdcard/Sortify/$folder" 2>/dev/null
+            fi
+        done
+
+        if [ -d "/sdcard/Sortify/Audio" ]; then
+            MUSIC_EXTS="mp3 flac wav m4a ogg aac opus alac"
+            find "/sdcard/Sortify/Audio" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                [ -z "$f" ] && continue
+                ext=$(basename "$f" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
+                is_music=false
+                for me in $MUSIC_EXTS; do
+                    if [ "$ext" = "$me" ]; then
+                        is_music=true
+                        break
                     fi
                 done
-                rmdir "$old_dir/Audio" 2>/dev/null
-            fi
-
-            # 3. Any leftover files directly in root of old_dir
-            find "$old_dir" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
-                [ -n "$f" ] && safe_mv "$f" "$DEST"
+                if [ "$is_music" = "true" ]; then
+                    safe_mv "$f" "$DEST/Audio/Music"
+                else
+                    safe_mv "$f" "$DEST/Audio"
+                fi
             done
+            rmdir "/sdcard/Sortify/Audio" 2>/dev/null
+        fi
 
-            rmdir "$old_dir" 2>/dev/null
-            ui_print "  • Migrated $old_dir"
+        find "/sdcard/Sortify" -maxdepth 1 -type f ! -name "sortify.log" ! -name "sortify.conf" 2>/dev/null | while read -r f; do
+            [ -n "$f" ] && safe_mv "$f" "$DEST"
+        done
+
+        rm -rf "/sdcard/Sortify" 2>/dev/null
+        ui_print "  • Migrated /sdcard/Sortify"
+    else
+        rm -rf "/sdcard/Sortify" 2>/dev/null
+    fi
+fi
+
+# 2. Check if legacy /sdcard/Download/Sortify has category folders (ignore if just log/conf)
+if [ -d "/sdcard/Download/Sortify" ]; then
+    has_cat=false
+    for folder in Documents Images Videos Archives Apps Others Duplicates Code Audio; do
+        if [ -d "/sdcard/Download/Sortify/$folder" ]; then
+            has_cat=true
+            break
         fi
     done
-
-    # Cleanly remove old module if installed
-    if [ -d "/data/adb/modules/sortify" ]; then
-        touch "/data/adb/modules/sortify/remove" 2>/dev/null
-        rm -rf "/data/adb/modules/sortify" 2>/dev/null
-        ui_print "  • Replaced legacy Sortify module"
+    if [ "$has_cat" = "true" ]; then
+        start_legacy_box
+        for folder in Documents Images Videos Archives Apps Others Duplicates Code; do
+            if [ -d "/sdcard/Download/Sortify/$folder" ]; then
+                find "/sdcard/Download/Sortify/$folder" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                    [ -n "$f" ] && safe_mv "$f" "$DEST/$folder"
+                done
+                rmdir "/sdcard/Download/Sortify/$folder" 2>/dev/null
+            fi
+        done
+        if [ -d "/sdcard/Download/Sortify/Audio" ]; then
+            MUSIC_EXTS="mp3 flac wav m4a ogg aac opus alac"
+            find "/sdcard/Download/Sortify/Audio" -maxdepth 1 -type f 2>/dev/null | while read -r f; do
+                [ -z "$f" ] && continue
+                ext=$(basename "$f" | sed 's/.*\.//' | tr '[:upper:]' '[:lower:]')
+                is_music=false
+                for me in $MUSIC_EXTS; do [ "$ext" = "$me" ] && is_music=true && break; done
+                if [ "$is_music" = "true" ]; then
+                    safe_mv "$f" "$DEST/Audio/Music"
+                else
+                    safe_mv "$f" "$DEST/Audio"
+                fi
+            done
+            rmdir "/sdcard/Download/Sortify/Audio" 2>/dev/null
+        fi
+        ui_print "  • Migrated /sdcard/Download/Sortify"
     fi
+fi
 
+# 3. Cleanly remove old original module if installed
+if [ -d "/data/adb/modules/sortify" ]; then
+    start_legacy_box
+    touch "/data/adb/modules/sortify/remove" 2>/dev/null
+    rm -rf "/data/adb/modules/sortify" 2>/dev/null
+    ui_print "  • Replaced legacy Sortify module"
+fi
+
+# Only close box if migration actually ran
+if [ "$has_migrated" = "true" ]; then
     ui_print "  ✔ Upgraded cleanly"
     ui_print "─────────────────────────────────"
 fi
