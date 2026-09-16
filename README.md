@@ -18,13 +18,11 @@ Extended from [Sortify](https://github.com/xCaptaiN09/Sortify) by [xCaptaiN09](h
 ## Screenshots
 
 <p align="center">
-  <img src="screenshots/webui-dashboard.png" alt="WebUI Dashboard" width="23%" />
+  <img src="screenshots/webui-dashboard.png" alt="WebUI Dashboard" width="31%" />
   &nbsp;
-  <img src="screenshots/webui-safety-toast.png" alt="WebUI Safety Net" width="23%" />
+  <img src="screenshots/webui-safety-toast.png" alt="WebUI Safety Net" width="31%" />
   &nbsp;
-  <img src="screenshots/webui-overview.jpg" alt="WebUI Overview" width="23%" />
-  &nbsp;
-  <img src="screenshots/webui-settings.jpg" alt="WebUI Settings" width="23%" />
+  <img src="screenshots/webui-settings.jpg" alt="WebUI Settings" width="31%" />
 </p>
 
 ## Features
