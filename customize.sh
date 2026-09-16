@@ -1,4 +1,4 @@
-﻿#!/system/bin/sh
+#!/system/bin/sh
 # ─────────────────────────────────────────────
 # Sortify Xtended v1.0 - customize.sh
 # Runs during flash via Magisk/KernelSU/APatch
@@ -10,11 +10,67 @@ CONF="$MODPATH/sortify.conf"
 WEBROOT="$MODPATH/webroot"
 OLD_CONF="/data/adb/modules/sortify/sortify.conf"
 
-ui_print "─────────────────────────────────"
-ui_print "  Sortify Xtended v1.0"
-ui_print "  by Imnotshashwat"
-ui_print "  Based on Sortify by xCaptaiN09"
-ui_print "─────────────────────────────────"
+# ─── device info detection ─────────────────
+BRAND=$(getprop ro.product.brand 2>/dev/null)
+[ -z "$BRAND" ] && BRAND=$(getprop ro.product.manufacturer 2>/dev/null)
+[ -z "$BRAND" ] && BRAND="Unknown"
+
+MODEL=$(getprop ro.product.model 2>/dev/null)
+[ -z "$MODEL" ] && MODEL="Unknown"
+
+ANDROID_VER=$(getprop ro.build.version.release 2>/dev/null)
+[ -z "$ANDROID_VER" ] && ANDROID_VER="$API"
+
+DEVICE_ARCH=$(getprop ro.product.cpu.abi 2>/dev/null)
+[ -z "$DEVICE_ARCH" ] && DEVICE_ARCH="$ARCH"
+
+KERNEL_VER=$(uname -r 2>/dev/null)
+[ -z "$KERNEL_VER" ] && KERNEL_VER="Unknown"
+
+if [ "$KSU" = "true" ]; then
+    if [ -n "$KSU_VER_CODE" ]; then
+        ROOT_MGR="KernelSU ($KSU_VER_CODE)"
+    elif [ -n "$KSU_VER" ]; then
+        ROOT_MGR="KernelSU ($KSU_VER)"
+    else
+        ROOT_MGR="KernelSU"
+    fi
+elif [ "$APATCH" = "true" ]; then
+    if [ -n "$APATCH_VER_CODE" ]; then
+        ROOT_MGR="APatch ($APATCH_VER_CODE)"
+    elif [ -n "$APATCH_VER" ]; then
+        ROOT_MGR="APatch ($APATCH_VER)"
+    else
+        ROOT_MGR="APatch"
+    fi
+elif [ -n "$MAGISK_VER" ]; then
+    if [ -n "$MAGISK_VER_CODE" ]; then
+        ROOT_MGR="Magisk ($MAGISK_VER, $MAGISK_VER_CODE)"
+    else
+        ROOT_MGR="Magisk ($MAGISK_VER)"
+    fi
+else
+    ROOT_MGR="Root (Unknown)"
+fi
+
+CURR_TIME=$(date "+%d, %b - %H:%M %Z" 2>/dev/null)
+[ -z "$CURR_TIME" ] && CURR_TIME=$(date 2>/dev/null)
+
+ui_print "Welcome to Sortify Xtended installation wizard!"
+ui_print ""
+ui_print "------------------------------------------------\\"
+ui_print "                                                \\"
+ui_print "- ⚙️  Module Version: v1.0"
+ui_print "- 📱 Device Brand: $BRAND"
+ui_print "- 📱 Device Model: $MODEL"
+ui_print "- 🤖 Android Version: $ANDROID_VER"
+ui_print "- 🏹 Device Arch: $DEVICE_ARCH"
+ui_print "- 🛠️  Kernel version: $KERNEL_VER"
+ui_print "- 🔒 Root Manager: $ROOT_MGR"
+ui_print "- ⏳ Current Time: $CURR_TIME"
+ui_print "                                                /"
+ui_print "------------------------------------------------/"
+ui_print ""
 
 # ─── check Android version ─────────────────
 if [ "$API" -lt 26 ]; then
@@ -22,15 +78,14 @@ if [ "$API" -lt 26 ]; then
     abort "Unsupported Android version: API $API"
 fi
 
-ui_print "- Android API $API ($ARCH) ✓"
-
 # ─── create webroot dir ────────────────────
-ui_print "- Setting up webroot..."
+ui_print "[*] Preparing Sortify Xtended environment"
+ui_print "[*] Setting up webroot"
 mkdir -p "$WEBROOT"
 chmod 755 "$WEBROOT"
 
 # ─── write conf ────────────────────────────
-ui_print "- Writing configuration..."
+ui_print "[*] Writing configuration"
 
 write_default_conf() {
     cat > "$CONF" << 'EOF'
@@ -74,7 +129,7 @@ add_if_missing() {
 
 if [ -f "$CONF" ]; then
     # ── upgrade: existing Sortify Xtended conf ──
-    ui_print "  ✔ Existing config merged"
+    ui_print "    ✔ Existing configuration merged"
     # always reset stopped/paused on upgrade
     sed -i 's/^STOPPED=.*/STOPPED=false/' "$CONF"
     sed -i 's/^PAUSED_UNTIL=.*/PAUSED_UNTIL=0/' "$CONF"
@@ -105,7 +160,7 @@ if [ -f "$CONF" ]; then
 
 elif [ -f "$OLD_CONF" ]; then
     # ── migration: old Sortify (v7.x) conf found ──
-    ui_print "  ✔ Old Sortify settings imported"
+    ui_print "    ✔ Settings imported from previous configuration"
     write_default_conf
     # migrate what we can from old conf
     old_interval=$(grep "^INTERVAL=" "$OLD_CONF" | cut -d= -f2)
@@ -119,7 +174,7 @@ elif [ -f "$OLD_CONF" ]; then
 
 else
     # ── fresh install ──
-    ui_print "  ✔ Fresh install config applied"
+    ui_print "    ✔ Default configuration applied"
     write_default_conf
 fi
 
@@ -163,8 +218,7 @@ has_migrated=false
 start_legacy_box() {
     if [ "$has_migrated" != "true" ]; then
         has_migrated=true
-        ui_print "─────────────────────────────────"
-        ui_print "  ⚙ Legacy Migration:"
+        ui_print "[*] Migrating legacy Sortify data"
     fi
 }
 
@@ -207,7 +261,7 @@ if [ -d "/sdcard/Sortify" ]; then
         done
 
         rm -rf "/sdcard/Sortify" 2>/dev/null
-        ui_print "  • Migrated /sdcard/Sortify"
+        ui_print "    • Migrated /sdcard/Sortify"
     else
         rm -rf "/sdcard/Sortify" 2>/dev/null
     fi
@@ -247,7 +301,7 @@ if [ -d "/sdcard/Download/Sortify" ]; then
             done
             rmdir "/sdcard/Download/Sortify/Audio" 2>/dev/null
         fi
-        ui_print "  • Migrated /sdcard/Download/Sortify"
+        ui_print "    • Migrated /sdcard/Download/Sortify"
     fi
 fi
 
@@ -256,17 +310,15 @@ if [ -d "/data/adb/modules/sortify" ]; then
     start_legacy_box
     touch "/data/adb/modules/sortify/remove" 2>/dev/null
     rm -rf "/data/adb/modules/sortify" 2>/dev/null
-    ui_print "  • Replaced legacy Sortify module"
+    ui_print "    • Replaced legacy Sortify module"
 fi
 
-# Only close box if migration actually ran
 if [ "$has_migrated" = "true" ]; then
-    ui_print "  ✔ Upgraded cleanly"
-    ui_print "─────────────────────────────────"
+    ui_print "    ✔ Migration complete"
 fi
 
 # ─── set permissions ───────────────────────
-ui_print "- Applying permissions..."
+ui_print "[*] Applying permissions"
 set_perm_recursive "$MODPATH"         0 0 0755 0644
 set_perm "$MODPATH/service.sh"        0 0 0755
 set_perm "$MODPATH/action.sh"         0 0 0755
@@ -275,8 +327,6 @@ set_perm "$MODPATH/customize.sh"      0 0 0755
 set_perm "$CONF"                      0 0 0644
 set_perm "$WEBROOT/sortify.conf"      0 0 0644
 
-ui_print "─────────────────────────────────"
-ui_print "  Sortify Xtended installed!"
-ui_print "  Open KernelSU / APatch / Magisk"
-ui_print "  → Tap WebUI to configure"
-ui_print "─────────────────────────────────"
+ui_print "[*] Sortify Xtended installed successfully!"
+ui_print "    Open KernelSU / APatch / Magisk"
+ui_print "    → Tap WebUI to configure"
