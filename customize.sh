@@ -56,6 +56,9 @@ fi
 CURR_TIME=$(date "+%d, %b - %H:%M %Z" 2>/dev/null)
 [ -z "$CURR_TIME" ] && CURR_TIME=$(date 2>/dev/null)
 
+ui_print "Sortify Xtended v1.0"
+ui_print "by Imnotshashwat"
+ui_print ""
 ui_print "Welcome to Sortify Xtended installation wizard!"
 ui_print ""
 ui_print "------------------------------------------------\\"
